@@ -17,9 +17,6 @@ const {
     SALESFORCE_LOGIN_URL,
     SALESFORCE_CLIENT_ID,
     SALESFORCE_CLIENT_SECRET,
-    SALESFORCE_USERNAME,
-    SALESFORCE_PASSWORD,
-    SALESFORCE_TOKEN,
     SALESFORCE_USER_ID
 } = process.env;
 
@@ -37,11 +34,9 @@ const getSalesforceToken = async () => {
     try {
         const response = await axios.post(SF_OAUTH_TOKEN_ENDPOINT, null, {
             params: {
-                grant_type: 'password',
+                grant_type: 'client_credentials',
                 client_id: SALESFORCE_CLIENT_ID,
-                client_secret: SALESFORCE_CLIENT_SECRET,
-                username: SALESFORCE_USERNAME,
-                password: SALESFORCE_PASSWORD + SALESFORCE_TOKEN // セキュリティトークンが必要な場合は追加
+                client_secret: SALESFORCE_CLIENT_SECRET
             }
         });
 
@@ -67,7 +62,7 @@ const getSalesforceToken = async () => {
     const client = new PubSubApiClient();
     await client.connect();
 
-    // Subscribe to opportunity change events
+    // 「Reseller Order」の変更データキャプチャイベントを購読
     const eventEmitter = await client.subscribe(ORDER_CDC_TOPIC);
 
     // expressアプリケーションを作成
@@ -78,7 +73,7 @@ const getSalesforceToken = async () => {
     app.ws('/ws', (ws, req) => {
         console.log('WebSocket connection established');
 
-        // Handle incoming events
+        // 受信したイベントを処理するコールバック
         eventEmitter.on('data', (event) => {
             console.log(
                 `Handling ${event.payload.ChangeEventHeader.entityName} change event ` +
